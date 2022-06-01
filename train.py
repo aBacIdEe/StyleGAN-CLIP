@@ -1,6 +1,7 @@
 import torch
 import cv2
 import numpy as np
+import torchvision.models as models
 from transformers import DistilBertTokenizer, DistilBertModel
 from torch import nn
 class config:
@@ -18,37 +19,38 @@ class Dataset: # maybe inherit the pytorch Dataset class
     '''
     pass
 
-class CLIPModel:
-    '''
-    Properties of the model
-    its nn
-    batch size
-    epochs
-    checkpoints maybe
-    '''
+class CLIPModel(nn.Module):
+    
+    def __init__(self):
+        super().__init__()
+
 
     '''
     methods of the model
+    Foward: 
     Calculate the Cost
     Update the parameters
     '''
     pass
 
-
+'''
+Somehow setup these tokenizers
+'''
 class wordTokenizer(nn.Module):
     pass
 
-    def __init__(self):
+    def __init__(self, input):
         super().__init__()
 
         tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
-        model = DistilBertModel.from_pretrained("distilbert-base-uncased")
+        self.model = DistilBertModel.from_pretrained("distilbert-base-uncased")
 
-        inputs = tokenizer(stuff, return_tensors="pt")
-        outputs = model(**inputs)
+        self.inputs = tokenizer(input, return_tensors="pt")
+        
 
     def forward(self): # what it does on each call
         # return the token
+        outputs = self.model(**self.inputs)
         last_hidden_states = outputs.last_hidden_state
         pass
 
@@ -58,10 +60,14 @@ class imageTokenizer(nn.Module):
 
     def __init__(self):
         super().__init__()
-
+        self.model = models.resnet50(pretrained=True)
         
     # input image
     # output vector
+    def forward(self, input):
+        return self.model(input)
+
+def train():
     pass
 
 def main():
