@@ -2,6 +2,7 @@ import torch
 import cv2
 import numpy as np
 from transformers import DistilBertTokenizer, DistilBertModel
+from torch import nn
 class config:
     image_path = "dataset"
     # batch size
@@ -33,15 +34,33 @@ class CLIPModel:
     '''
     pass
 
-# Functions we'll probably need but just not in a class
 
-def imageTokenizer():
-    # input image 
-    # output vector 
+class wordTokenizer(nn.Module):
     pass
 
-def textTokenizer():
-    # input string
+    def __init__(self):
+        super().__init__()
+
+        tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+        model = DistilBertModel.from_pretrained("distilbert-base-uncased")
+
+        inputs = tokenizer(stuff, return_tensors="pt")
+        outputs = model(**inputs)
+
+    def forward(self): # what it does on each call
+        # return the token
+        last_hidden_states = outputs.last_hidden_state
+        pass
+
+
+class imageTokenizer(nn.Module):
+    pass
+
+    def __init__(self):
+        super().__init__()
+
+        
+    # input image
     # output vector
     pass
 
