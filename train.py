@@ -4,6 +4,7 @@ import numpy as np
 import torchvision.models as models
 from transformers import DistilBertTokenizer, DistilBertModel
 from torch import nn
+
 class config:
     image_path = "dataset"
     # batch size
