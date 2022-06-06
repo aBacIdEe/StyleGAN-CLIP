@@ -1,3 +1,4 @@
+from cgitb import text
 import cv2
 import numpy as np
 import os
@@ -8,6 +9,7 @@ from transformers import DistilBertTokenizer, DistilBertModel
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 class Config:
     debug = False
@@ -16,6 +18,7 @@ class Config:
     captions_path = "Datasets/Flicker-30k"
     max_length = 32
     size = 0 #TODO
+    projection_dim = 256
     # batch size
     # epochs
     # other parameters
@@ -62,6 +65,20 @@ class Dataset(torch.utils.data.Dataset):
     A list to hold the image-text pairs
     '''
 
+class Projection():
+    
+    def __init__(
+        self, embedding_dim,
+        projection_dim=Config.projection_dim):
+        super().__init__()
+
+        self.projection = nn.Linear(embedding_dim, projection_dim)
+
+    def forward(self, x):
+        x = self.projection(x)
+        return x
+
+
 class CLIPModel(nn.Module):
     
     def __init__(
@@ -87,7 +104,24 @@ class CLIPModel(nn.Module):
         text_features = self.text_encoder(
             input_ids = input["input_ids"], attention_mask=input["attention_mask"]
         )
+        image_embeddings = self.image_projection(image_features)
+        text_embeddings = self.text_projection(text_features)
 
+        logit = image_embeddings @ text_embeddings.T
+        image_similarity = image_embeddings @ image_embeddings.T
+        text_similarity = text_embeddings @ text_embeddings.T
+
+        targets = F.softmax(
+            (image_similarity + text_similarity) / 2 , dim=-1)
+        image_loss = self.cross_entropy(logit, targets)
+        text_loss = self.cross_entropy(logit.T, targets.T)
+        loss = (image_loss + text_loss) / 2
+        return loss
+
+    def cross_entropy(self, x,  targets):
+        logSoftmax = nn.LogSoftmax(dim=-1)
+        loss = (-targets * logSoftmax(x)).sum(1)
+        return loss
 
     '''
     methods of the model
@@ -101,7 +135,6 @@ class CLIPModel(nn.Module):
 Somehow setup these tokenizers
 '''
 class WordTokenizer(nn.Module):
-    pass
 
     def __init__(self, input):
         super().__init__()
@@ -116,10 +149,10 @@ class WordTokenizer(nn.Module):
         # return the token
         outputs = self.model(**self.inputs)
         last_hidden_states = outputs.last_hidden_state
+        return last_hidden_states
         
 
 class ImageTokenizer(nn.Module):
-    pass
 
     def __init__(self):
         super().__init__()
