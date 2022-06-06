@@ -37,7 +37,7 @@ class Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         item = {
             key: torch.tensor(values[idx])
-            for key, value in self.encoded_captions.items()
+            for key, values in self.encoded_captions.items()
         }
 
         image = cv2.imread(f"{Config.image_path}/{self.files[idx]}")
