@@ -1,29 +1,92 @@
-import torch
 import cv2
 import numpy as np
+import os
+
+import albumentations as A # provides fast image augmentation and implements image transform
 import torchvision.models as models
 from transformers import DistilBertTokenizer, DistilBertModel
+
+import torch
 from torch import nn
 
-class config:
+class Config:
+    debug = False
     image_path = "dataset"
+    image_path = "Datasets/Flicker-30k/Images"
+    captions_path = "Datasets/Flicker-30k"
+    max_length = 32
+    size = 0 #TODO
     # batch size
     # epochs
     # other parameters
 
 # Classes we'll probably need
 
-class Dataset: # maybe inherit the pytorch Dataset class
+class Dataset(torch.utils.data.Dataset):
+    def __init__(self, files, captions, tokenizer, transforms):
+        self.files = files
+        self.captions = list(captions)
+        self.encoded_captions = tokenizer(
+            list(captions), padding=True, truncation=True, max_length=Config.max_length
+        )
+        self.transforms = transforms
+
+    def __getitem__(self, idx):
+        item = {
+            key: torch.tensor(values[idx])
+            for key, value in self.encoded_captions.items()
+        }
+
+        image = cv2.imread(f"{Config.image_path}/{self.files[idx]}")
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = self.transforms(image=image)['image']
+        item['image'] = torch.tensor(image).permute(2, 0, 1).float()
+        item['caption'] = self.captions[idx]
+
+        return item
+
+    def __len__(self):
+        return len(self.captions)
+
+    def get_transformers(mode="train"):
+        return A.Compose(
+            [
+                A.Resize(Config.size, Config.size, always_apply=True),
+                A.Normalize(max_pixel_value=255.0, always_apply=True)
+            ]
+        ) 
+
+
     '''
     Properties of a Dataset:
     A list to hold the image-text pairs
     '''
-    pass
 
 class CLIPModel(nn.Module):
     
-    def __init__(self):
+    def __init__(
+        self, temperature=Config.temperature, 
+        image_embedding=Config.image_embedding, 
+        text_embedding=Config.text_embedding):
+
         super().__init__()
+        
+        # encoders
+        self.image_encoder = ImageTokenizer()
+        self.text_encoder = WordTokenizer()
+        
+        # to project both image and text onto the same 256 plane
+        self.image_projection = Projection(embedding_dim=image_embedding)
+        self.text_projection = Projection(embedding_dim=text_embedding)
+        
+        self.temperature = temperature
+    
+    def forward(self, input):
+        image_features = self.image_encoder(input["image"])
+        # getting text labels
+        text_features = self.text_encoder(
+            input_ids = input["input_ids"], attention_mask=input["attention_mask"]
+        )
 
 
     '''
@@ -37,7 +100,7 @@ class CLIPModel(nn.Module):
 '''
 Somehow setup these tokenizers
 '''
-class wordTokenizer(nn.Module):
+class WordTokenizer(nn.Module):
     pass
 
     def __init__(self, input):
@@ -53,10 +116,9 @@ class wordTokenizer(nn.Module):
         # return the token
         outputs = self.model(**self.inputs)
         last_hidden_states = outputs.last_hidden_state
-        pass
+        
 
-
-class imageTokenizer(nn.Module):
+class ImageTokenizer(nn.Module):
     pass
 
     def __init__(self):
@@ -68,11 +130,27 @@ class imageTokenizer(nn.Module):
     def forward(self, input):
         return self.model(input)
 
+"""
+Projection class will allow us to project the images onto a 256
+dim plane so we can accurately compare them
+"""
+class Projection(nn.Module):
+    def __init__(self, embedding_dim, projection_dim=Config.projection_dim, dropout=Config.dropout):
+        super().__init__()
+        self.projection = nn.Linear(embedding_dim, projection_dim)
+        self.gelu = nn.GELU() # gaussian error linear units
+        self.fc = nn.Linear(projection_dim, projection_dim)
+        self.dropout = nn.Dropout(dropout) # prevents over-fitting
+        self.layer_norm = nn.LayerNorm(projection_dim) # normalization
+
+    def forward(self, input):
+        projection = self.projection(input)
+        input = self.gelu(projection)
+        input = self.fc(input)
+        input = self.dropout(input)
+        input = input + projection
+        input = self.layer_norm(input)
+        return input
+
 def train():
     pass
-
-def main():
-    pass
-
-
-
