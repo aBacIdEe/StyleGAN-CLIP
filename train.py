@@ -187,7 +187,7 @@ class Metric():
 def make_loader(): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
     dataset = CLIPModel(
-        
+
     )
     dataloader = torch.utils.data.Dataloader(
         # configure upon parsing dataset
@@ -200,6 +200,7 @@ def train_epoch(model, dataloader): # plugs Dataset through one interation
     for batch in dataloader:
         loss = model(batch)
         loss_meter.update(loss)
+    return loss_meter
 
 
 def train() : # for however many epochs
