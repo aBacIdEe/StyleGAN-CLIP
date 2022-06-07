@@ -23,13 +23,15 @@ class Config:
     temperature = 1
     image_embedding = 2048
     text_embedding = 768
-    # batch size
-    # epochs
+    batch_size = 32
+    epochs = 2
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # other parameters
 
 # Classes we'll probably need
 
 class Dataset(torch.utils.data.Dataset):
+
     def __init__(self, files, captions, tokenizer, transforms):
         self.files = files
         self.captions = list(captions)
@@ -140,7 +142,7 @@ class WordTokenizer(nn.Module):
         # return the token
         outputs = self.model(**self.inputs)
         last_hidden_states = outputs.last_hidden_state
-        return last_hidden_states
+        return last_hidden_states[:,0,:]
         
 
 class ImageTokenizer(nn.Module):
@@ -184,7 +186,7 @@ class Metric():
     def update(value):
         pass
 
-def make_loader(): # inputs Dataset, outputs Dataloader
+def make_loader(data): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
     dataset = CLIPModel(
 
@@ -203,7 +205,7 @@ def train_epoch(model, dataloader): # plugs Dataset through one interation
     return loss_meter
 
 
-def train() : # for however many epochs
+def make_train() : # for however many epochs
     df = pd.read_csv("datasets/labels.csv")
     max_id = df["id"].max() + 1
     image_ids = np.arrange(0, max_id)
@@ -212,8 +214,24 @@ def train() : # for however many epochs
     test_ids = np.random.choice(
         image_ids, size=int(.2*len(image_ids)), replace=False
     )
-    train_ids = [id_ for id_ in image_ids and id_ not in test_ids]
+    train_ids = [id_ for id_ in image_ids if id_ not in test_ids]
     
     train_df = df[df["id"].isin(train_ids)].reset_index(drop=True)
     test_df = df[df["id"].isin(test_ids)].reset_index(drop=True)
     return train_df, test_df
+
+def main():
+    train_df, valid_df = make_train()
+    train_loader = make_loader(train_df)
+    model = CLIPModel().to(Config.device)
+
+    for epoch in range(Config.epochs):
+        print(f"Epoch: {epoch + 1}")
+        model.train()
+        train_loss = train_epoch(model, train_loader)
+        model.eval()
+        
+        if train_loss < best_loss:
+            best_loss = train_loss
+            torch.save(model.state_dict(), "best.pt")
+            print("Saved Best Model")
