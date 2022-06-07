@@ -181,6 +181,9 @@ class Metric():
     def __init__():
         pass
 
+    def update(value):
+        pass
+
 def make_loader(): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
     dataset = CLIPModel(
@@ -192,10 +195,11 @@ def make_loader(): # inputs Dataset, outputs Dataloader
     )
     return dataloader
 
-def train_epoch(dataloader): # plugs Dataset through one interation
+def train_epoch(model, dataloader): # plugs Dataset through one interation
     loss_meter = Metric()
     for batch in dataloader:
-        pass
+        loss = model(batch)
+        loss_meter.update(loss)
 
 
 def train() : # for however many epochs
