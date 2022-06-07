@@ -187,7 +187,7 @@ class Metric():
 def make_loader(): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
     dataset = CLIPModel(
-
+        
     )
     dataloader = torch.utils.data.Dataloader(
         dataset
