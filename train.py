@@ -1,6 +1,7 @@
 from cgitb import text
 import cv2
 import numpy as np
+import pandas as pd
 import os
 
 import albumentations as A # provides fast image augmentation and implements image transform
@@ -90,6 +91,7 @@ class CLIPModel(nn.Module):
         text_features = self.text_encoder(
             input_ids = input["input_ids"], attention_mask=input["attention_mask"]
         )
+
         image_embeddings = self.image_projection(image_features)
         text_embeddings = self.text_projection(text_features)
 
@@ -173,11 +175,23 @@ class Projection(nn.Module):
 
 
 
-def make_loader(): # inputs Dataset, outputs Dataloader
-    pass
+def make_loader(df, tokenizer, mode): # inputs Dataset, outputs Dataloader
+    transforms = get_transforms
 
 def train_epoch(): # plugs Dataset through one interation
     pass
 
-def train(): # for however many epochs
-    pass
+def train() : # for however many epochs
+    df = pd.read_csv("datasets/labels.csv")
+    max_id = df["id"].max() + 1
+    image_ids = np.arrange(0, max_id)
+    np.random.seed(420)
+    
+    test_ids = np.random.choice(
+        image_ids, size=int(.2*len(image_ids)), replace=False
+    )
+    train_ids = [id_ for id_ in image_ids and id_ not in test_ids]
+    
+    train_df = df[df["id"].isin(train_ids)].reset_index(drop=True)
+    test_df = df[df["id"].isin(test_ids)].reset_index(drop=True)
+    return train_df, test_df
