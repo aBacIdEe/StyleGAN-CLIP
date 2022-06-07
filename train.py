@@ -190,6 +190,7 @@ def make_loader(): # inputs Dataset, outputs Dataloader
         
     )
     dataloader = torch.utils.data.Dataloader(
+        # configure upon parsing dataset
         dataset
     )
     return dataloader
