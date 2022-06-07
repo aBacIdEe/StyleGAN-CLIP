@@ -65,20 +65,6 @@ class Dataset(torch.utils.data.Dataset):
     A list to hold the image-text pairs
     '''
 
-class Projection():
-    
-    def __init__(
-        self, embedding_dim,
-        projection_dim=Config.projection_dim):
-        super().__init__()
-
-        self.projection = nn.Linear(embedding_dim, projection_dim)
-
-    def forward(self, x):
-        x = self.projection(x)
-        return x
-
-
 class CLIPModel(nn.Module):
     
     def __init__(
