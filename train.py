@@ -174,7 +174,10 @@ class Projection(nn.Module):
         input = self.layer_norm(input)
         return input
 
+class Metric():
 
+    def __init__():
+        pass
 
 def make_loader(): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
@@ -186,8 +189,11 @@ def make_loader(): # inputs Dataset, outputs Dataloader
     )
     return dataloader
 
-def train_epoch(): # plugs Dataset through one interation
-    pass
+def train_epoch(dataloader): # plugs Dataset through one interation
+    loss_meter = Metric()
+    for batch in dataloader:
+        pass
+
 
 def train(): # for however many epochs
     pass
