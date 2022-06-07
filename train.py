@@ -171,5 +171,13 @@ class Projection(nn.Module):
         input = self.layer_norm(input)
         return input
 
-def train():
+
+
+def make_loader(): # inputs Dataset, outputs Dataloader
+    pass
+
+def train_epoch(): # plugs Dataset through one interation
+    pass
+
+def train(): # for however many epochs
     pass
