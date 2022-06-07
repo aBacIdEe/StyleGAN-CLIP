@@ -20,6 +20,9 @@ class Config:
     max_length = 32
     size = 0 #TODO
     projection_dim = 256
+    temperature = 1
+    image_embedding = 2048
+    text_embedding = 768
     # batch size
     # epochs
     # other parameters
@@ -52,13 +55,13 @@ class Dataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.captions)
 
-    def get_transformers(mode="train"):
-        return A.Compose(
-            [
-                A.Resize(Config.size, Config.size, always_apply=True),
-                A.Normalize(max_pixel_value=255.0, always_apply=True)
-            ]
-        ) 
+def get_transformers(mode="train"):
+    return A.Compose(
+        [
+            A.Resize(Config.size, Config.size, always_apply=True),
+            A.Normalize(max_pixel_value=255.0, always_apply=True)
+        ]
+    ) 
 
 
     '''
@@ -173,13 +176,26 @@ class Projection(nn.Module):
         input = self.layer_norm(input)
         return input
 
+class Metric():
 
+    def __init__():
+        pass
 
-def make_loader(df, tokenizer, mode): # inputs Dataset, outputs Dataloader
-    transforms = get_transforms
+def make_loader(): # inputs Dataset, outputs Dataloader
+    transforms = get_transformers()
+    dataset = CLIPModel(
 
-def train_epoch(): # plugs Dataset through one interation
-    pass
+    )
+    dataloader = torch.utils.data.Dataloader(
+        dataset
+    )
+    return dataloader
+
+def train_epoch(dataloader): # plugs Dataset through one interation
+    loss_meter = Metric()
+    for batch in dataloader:
+        pass
+
 
 def train() : # for however many epochs
     df = pd.read_csv("datasets/labels.csv")
