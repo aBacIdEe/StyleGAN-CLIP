@@ -19,6 +19,9 @@ class Config:
     max_length = 32
     size = 0 #TODO
     projection_dim = 256
+    temperature = 1
+    image_embedding = 2048
+    text_embedding = 768
     # batch size
     # epochs
     # other parameters
@@ -51,13 +54,13 @@ class Dataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.captions)
 
-    def get_transformers(mode="train"):
-        return A.Compose(
-            [
-                A.Resize(Config.size, Config.size, always_apply=True),
-                A.Normalize(max_pixel_value=255.0, always_apply=True)
-            ]
-        ) 
+def get_transformers(mode="train"):
+    return A.Compose(
+        [
+            A.Resize(Config.size, Config.size, always_apply=True),
+            A.Normalize(max_pixel_value=255.0, always_apply=True)
+        ]
+    ) 
 
 
     '''
@@ -174,7 +177,14 @@ class Projection(nn.Module):
 
 
 def make_loader(): # inputs Dataset, outputs Dataloader
-    pass
+    transforms = get_transformers()
+    dataset = CLIPModel(
+
+    )
+    dataloader = torch.utils.data.Dataloader(
+        dataset
+    )
+    return dataloader
 
 def train_epoch(): # plugs Dataset through one interation
     pass
