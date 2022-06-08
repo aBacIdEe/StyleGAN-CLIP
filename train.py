@@ -14,17 +14,16 @@ from torch import nn
 import torch.nn.functional as F
 
 class Config:
-    debug = False
     image_path = "Datasets/Flicker-30k/Images"
     captions_path = "Datasets/Flicker-30k"
     max_length = 32
-    size = 0 #TODO
-    projection_dim = 256
-    temperature = 1
+    size = 0 # TODO check how big are images
+    projection_dim = 256 # projection dimension size
+    temperature = 1 # confidence
     image_embedding = 2048
     text_embedding = 768
     batch_size = 32
-    epochs = 2
+    epochs = 2 # epochs to train for
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dropout = 0.1
     image_encoder_lr = 0.0001
