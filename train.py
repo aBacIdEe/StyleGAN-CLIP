@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import os
-
+from tqdm.autonotebook import tqdm
 import albumentations as A # provides fast image augmentation and implements image transform
 import torchvision.models as models
 from transformers import DistilBertTokenizer, DistilBertModel
@@ -186,22 +186,28 @@ class Metric():
     def update(value):
         pass
 
-def make_loader(data): # inputs Dataset, outputs Dataloader
+def make_loader(data, tokenizer): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
     dataset = CLIPModel(
-
+        data["image"].values,
+        data["labels"].values,
+        tokenizer=tokenizer,
+        transforms=transforms,
     )
     dataloader = torch.utils.data.Dataloader(
         # configure upon parsing dataset
-        dataset
+        dataset,
+        batch_size=Config.batch_size
     )
     return dataloader
 
 def train_epoch(model, dataloader): # plugs Dataset through one interation
     loss_meter = Metric()
-    for batch in dataloader:
+    tqdm_object = tqdm(dataloader, total=len(dataloader))
+    for batch in tqdm_object:
         loss = model(batch)
-        loss_meter.update(loss)
+        loss.backward()
+        loss_meter.update(loss.item)
     return loss_meter
 
 
@@ -229,7 +235,6 @@ def main():
         print(f"Epoch: {epoch + 1}")
         model.train()
         train_loss = train_epoch(model, train_loader)
-        model.eval()
         
         if train_loss < best_loss:
             best_loss = train_loss
