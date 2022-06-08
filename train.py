@@ -58,7 +58,7 @@ class Dataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.captions)
 
-def get_transformers(mode="train"):
+def get_transformers():
     return A.Compose(
         [
             A.Resize(Config.size, Config.size, always_apply=True),
@@ -209,17 +209,19 @@ def train_epoch(model, dataloader, optimizer): # plugs Dataloader through one it
     loss_meter = Metric()
     tqdm_object = tqdm(dataloader, total=len(dataloader))
     for batch in tqdm_object:
+        batch = {k: v.to(Config.device) for k, v in batch.items() if k != "caption"}
         loss = model(batch)
         optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+        optimizer.step() # updates weights
         loss_meter.update(loss.item)
     return loss_meter
 
 def valid_epoch(model, dataloader): # plugs Dataloader through one inference
-    loss_meter = Metric()
+    loss_meter = Metric() # running total of loss
     tqdm_object = tqdm(dataloader, total=len(dataloader))
     for batch in tqdm_object:
+        batch = {k: v.to(Config.device) for k, v in batch.items() if k != "caption"}
         loss = model(batch)
         loss_meter.update(loss.item)
     return loss_meter
@@ -231,9 +233,9 @@ def make_training_df() : # creates training dfs and validation dfs
     np.random.seed(420)
     
     test_ids = np.random.choice(
-        image_ids, size=int(.2*len(image_ids)), replace=False
+        image_ids, size=int(.2*len(image_ids)), replace=False # validation ids are randomly chosen
     )
-    train_ids = [id_ for id_ in image_ids if id_ not in test_ids]
+    train_ids = [id_ for id_ in image_ids if id_ not in test_ids] # training ids are everything except the validation ids
     
     train_df = df[df["id"].isin(train_ids)].reset_index(drop=True)
     test_df = df[df["id"].isin(test_ids)].reset_index(drop=True)
