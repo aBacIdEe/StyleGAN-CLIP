@@ -203,12 +203,14 @@ def make_loader(data, tokenizer): # inputs Dataset, outputs Dataloader
     )
     return dataloader
 
-def train_epoch(model, dataloader): # plugs Dataloader through one iteration
+def train_epoch(model, dataloader, optimizer): # plugs Dataloader through one iteration
     loss_meter = Metric()
     tqdm_object = tqdm(dataloader, total=len(dataloader))
     for batch in tqdm_object:
         loss = model(batch)
+        optimizer.zero_grad()
         loss.backward()
+        optimizer.step()
         loss_meter.update(loss.item)
     return loss_meter
 
@@ -240,11 +242,17 @@ def main():
     train_loader = make_loader(train_df) # takes dataframe and returns dataloader
     valid_loader = make_loader(valid_df) # takes other dataframe and returnd dataloader
     model = CLIPModel().to(Config.device) # creates a CLIP model
+    params = [
+        {},
+        {},
+        {}
+    ]
+    optimizer = torch.optim.AdamW(params, weight_decay=0)
 
     for epoch in range(Config.epochs): # iterates through as many epochs as needed
         print(f"Epoch: {epoch + 1}")
         model.train()
-        train_loss = train_epoch(model, train_loader)
+        train_loss = train_epoch(model, train_loader, optimizer)
         model.eval()
         with torch.no_grad():
             valid_loss = valid_epoch(model, valid_loader)
