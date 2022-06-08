@@ -2,6 +2,7 @@ from cgitb import text
 import cv2
 import numpy as np
 import pandas as pd
+import itertools
 import os
 from tqdm.autonotebook import tqdm
 import albumentations as A # provides fast image augmentation and implements image transform
@@ -26,6 +27,8 @@ class Config:
     epochs = 2
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dropout = 0.1
+    image_encoder_lr = 0.0001
+    text_encoder_lr = 0.0001
 
 # Classes we'll probably need
 
@@ -243,19 +246,21 @@ def main():
     valid_loader = make_loader(valid_df) # takes other dataframe and returnd dataloader
     model = CLIPModel().to(Config.device) # creates a CLIP model
     params = [
-        {},
-        {},
-        {}
+        {"params": model.image_encoder.parameters(), "lr": Config.image_encoder_lr},
+        {"params": model.text_encoder.parameters(), "lr": Config.text_encoder_lr},
+        {"params": itertools.chain(
+            model.image_projection.parameters(), model.text_projection.parameters()
+        ), "lr": Config.head_lr, "weight_decay": Config.weight_decay}
     ]
-    optimizer = torch.optim.AdamW(params, weight_decay=0)
+    optimizer = torch.optim.AdamW(params, weight_decay=0) # creates the optimizer object
 
     for epoch in range(Config.epochs): # iterates through as many epochs as needed
         print(f"Epoch: {epoch + 1}")
         model.train()
-        train_loss = train_epoch(model, train_loader, optimizer)
+        train_loss = train_epoch(model, train_loader, optimizer) # trains an epoch
         model.eval()
         with torch.no_grad():
-            valid_loss = valid_epoch(model, valid_loader)
+            valid_loss = valid_epoch(model, valid_loader) # validates an epoch
         
         if valid_loss < best_loss: # saves current model if it is better than the last one using valid_loss
             best_loss = train_loss
