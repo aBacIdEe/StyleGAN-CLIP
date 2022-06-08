@@ -200,7 +200,7 @@ def make_loader(data, tokenizer): # inputs Dataset, outputs Dataloader
     )
     return dataloader
 
-def train_epoch(model, dataloader): # plugs Dataset through one interation
+def train_epoch(model, dataloader): # plugs Dataloader through one iteration
     loss_meter = Metric()
     tqdm_object = tqdm(dataloader, total=len(dataloader))
     for batch in tqdm_object:
@@ -209,9 +209,16 @@ def train_epoch(model, dataloader): # plugs Dataset through one interation
         loss_meter.update(loss.item)
     return loss_meter
 
+def valid_epoch(model, dataloader): # plugs Dataloader through one inference
+    loss_meter = Metric()
+    tqdm_object = tqdm(dataloader, total=len(dataloader))
+    for batch in tqdm_object:
+        loss = model(batch)
+        loss_meter.update(loss.item)
+    return loss_meter
 
-def make_train() : # for however many epochs
-    df = pd.read_csv("datasets/labels.csv")
+def make_training_df() : # creates training dfs and validation dfs
+    df = pd.read_csv("dataset/labels.csv")
     max_id = df["id"].max() + 1
     image_ids = np.arrange(0, max_id)
     np.random.seed(420)
@@ -226,16 +233,19 @@ def make_train() : # for however many epochs
     return train_df, test_df
 
 def main():
-    train_df, valid_df = make_train()
-    train_loader = make_loader(train_df)
-    model = CLIPModel().to(Config.device)
+    train_df, valid_df = make_training_df() # returns dataframes for the training and validation
+    train_loader = make_loader(train_df) # takes dataframe and returns dataloader
+    valid_loader = make_loader(valid_df) # takes other dataframe and returnd dataloader
+    model = CLIPModel().to(Config.device) # creates a CLIP model
 
-    for epoch in range(Config.epochs):
+    for epoch in range(Config.epochs): # iterates through as many epochs as needed
         print(f"Epoch: {epoch + 1}")
         model.train()
         train_loss = train_epoch(model, train_loader)
+        with torch.no_grad():
+            valid_loss = valid_epoch(model, valid_loader)
         
-        if train_loss < best_loss:
+        if valid_loss < best_loss: # saves current model if it is better than the last one
             best_loss = train_loss
             torch.save(model.state_dict(), "best.pt")
             print("Saved Best Model")
