@@ -178,11 +178,19 @@ class Projection(nn.Module):
 
 class Metric():
 
-    def __init__():
-        pass
+    def __init__(self):
+        self.reset()
 
-    def update(value):
-        pass
+    def reset(self):
+        self.avg, self.sum, self.count = [0] * 3
+    
+    def update(self, val, count=1):
+        self.count+=1
+        self.sum += val*count
+        self.avg = self.sum/self.count
+
+    def __str__(self):
+        return f"{self.avg:.4f}"
 
 def make_loader(): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
@@ -202,7 +210,7 @@ def train_epoch(model, dataloader): # plugs Dataset through one interation
         loss_meter.update(loss)
 
 
-def train() : # for however many epochs
+def train() : # for however many epochs (probably 32 because the research paper said so)
     df = pd.read_csv("datasets/labels.csv")
     max_id = df["id"].max() + 1
     image_ids = np.arrange(0, max_id)
