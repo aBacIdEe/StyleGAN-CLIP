@@ -179,11 +179,14 @@ class Projection(nn.Module):
 
 class Metric():
 
-    def __init__():
-        pass
+    def __init__(self):
+        self.value = 0
 
-    def update(value):
-        pass
+    def __str__(self):
+        return self.value
+
+    def update(self, value):
+        self.value += value
 
 def make_loader(data, tokenizer): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
@@ -242,10 +245,11 @@ def main():
         print(f"Epoch: {epoch + 1}")
         model.train()
         train_loss = train_epoch(model, train_loader)
+        model.eval()
         with torch.no_grad():
             valid_loss = valid_epoch(model, valid_loader)
         
-        if valid_loss < best_loss: # saves current model if it is better than the last one
+        if valid_loss < best_loss: # saves current model if it is better than the last one using valid_loss
             best_loss = train_loss
             torch.save(model.state_dict(), "best.pt")
             print("Saved Best Model")
