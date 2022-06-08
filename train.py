@@ -2,8 +2,9 @@ from cgitb import text
 import cv2
 import numpy as np
 import pandas as pd
+import itertools
 import os
-
+from tqdm.autonotebook import tqdm
 import albumentations as A # provides fast image augmentation and implements image transform
 import torchvision.models as models
 from transformers import DistilBertTokenizer, DistilBertModel
@@ -13,23 +14,25 @@ from torch import nn
 import torch.nn.functional as F
 
 class Config:
-    debug = False
-    image_path = "dataset"
     image_path = "Datasets/Flicker-30k/Images"
     captions_path = "Datasets/Flicker-30k"
     max_length = 32
-    size = 0 #TODO
-    projection_dim = 256
-    temperature = 1
+    size = 0 # TODO check how big are images
+    projection_dim = 256 # projection dimension size
+    temperature = 1 # confidence
     image_embedding = 2048
     text_embedding = 768
-    # batch size
-    # epochs
-    # other parameters
+    batch_size = 32
+    epochs = 2 # epochs to train for
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    dropout = 0.1
+    image_encoder_lr = 0.0001
+    text_encoder_lr = 0.0001
 
 # Classes we'll probably need
 
 class Dataset(torch.utils.data.Dataset):
+
     def __init__(self, files, captions, tokenizer, transforms):
         self.files = files
         self.captions = list(captions)
@@ -55,7 +58,7 @@ class Dataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.captions)
 
-def get_transformers(mode="train"):
+def get_transformers():
     return A.Compose(
         [
             A.Resize(Config.size, Config.size, always_apply=True),
@@ -140,7 +143,7 @@ class WordTokenizer(nn.Module):
         # return the token
         outputs = self.model(**self.inputs)
         last_hidden_states = outputs.last_hidden_state
-        return last_hidden_states
+        return last_hidden_states[:,0,:]
         
 
 class ImageTokenizer(nn.Module):
@@ -192,35 +195,80 @@ class Metric():
     def __str__(self):
         return f"{self.avg:.4f}"
 
-def make_loader(): # inputs Dataset, outputs Dataloader
+def make_loader(data, tokenizer): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
     dataset = CLIPModel(
-
+        data["image"].values,
+        data["labels"].values,
+        tokenizer=tokenizer,
+        transforms=transforms,
     )
     dataloader = torch.utils.data.Dataloader(
         # configure upon parsing dataset
-        dataset
+        dataset,
+        batch_size=Config.batch_size
     )
     return dataloader
 
-def train_epoch(model, dataloader): # plugs Dataset through one interation
+def train_epoch(model, dataloader, optimizer): # plugs Dataloader through one iteration
     loss_meter = Metric()
-    for batch in dataloader:
+    tqdm_object = tqdm(dataloader, total=len(dataloader))
+    for batch in tqdm_object:
+        batch = {k: v.to(Config.device) for k, v in batch.items() if k != "caption"}
         loss = model(batch)
-        loss_meter.update(loss)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step() # updates weights
+        loss_meter.update(loss.item)
+    return loss_meter
 
+def valid_epoch(model, dataloader): # plugs Dataloader through one inference
+    loss_meter = Metric() # running total of loss
+    tqdm_object = tqdm(dataloader, total=len(dataloader))
+    for batch in tqdm_object:
+        batch = {k: v.to(Config.device) for k, v in batch.items() if k != "caption"}
+        loss = model(batch)
+        loss_meter.update(loss.item)
+    return loss_meter
 
-def train() : # for however many epochs (probably 32 because the research paper said so)
-    df = pd.read_csv("datasets/labels.csv")
+def make_training_df() : # creates training dfs and validation dfs
+    df = pd.read_csv("dataset/labels.csv")
     max_id = df["id"].max() + 1
     image_ids = np.arrange(0, max_id)
     np.random.seed(420)
     
     test_ids = np.random.choice(
-        image_ids, size=int(.2*len(image_ids)), replace=False
+        image_ids, size=int(.2*len(image_ids)), replace=False # validation ids are randomly chosen
     )
-    train_ids = [id_ for id_ in image_ids and id_ not in test_ids]
+    train_ids = [id_ for id_ in image_ids if id_ not in test_ids] # training ids are everything except the validation ids
     
     train_df = df[df["id"].isin(train_ids)].reset_index(drop=True)
     test_df = df[df["id"].isin(test_ids)].reset_index(drop=True)
     return train_df, test_df
+
+def main():
+    train_df, valid_df = make_training_df() # returns dataframes for the training and validation
+    train_loader = make_loader(train_df) # takes dataframe and returns dataloader
+    valid_loader = make_loader(valid_df) # takes other dataframe and returnd dataloader
+    model = CLIPModel().to(Config.device) # creates a CLIP model
+    params = [
+        {"params": model.image_encoder.parameters(), "lr": Config.image_encoder_lr},
+        {"params": model.text_encoder.parameters(), "lr": Config.text_encoder_lr},
+        {"params": itertools.chain(
+            model.image_projection.parameters(), model.text_projection.parameters()
+        ), "lr": Config.head_lr, "weight_decay": Config.weight_decay}
+    ]
+    optimizer = torch.optim.AdamW(params, weight_decay=0) # creates the optimizer object
+
+    for epoch in range(Config.epochs): # iterates through as many epochs as needed
+        print(f"Epoch: {epoch + 1}")
+        model.train()
+        train_loss = train_epoch(model, train_loader, optimizer) # trains an epoch
+        model.eval()
+        with torch.no_grad():
+            valid_loss = valid_epoch(model, valid_loader) # validates an epoch
+        
+        if valid_loss < best_loss: # saves current model if it is better than the last one using valid_loss
+            best_loss = train_loss
+            torch.save(model.state_dict(), "best.pt")
+            print("Saved Best Model")
