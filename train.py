@@ -14,7 +14,6 @@ import torch.nn.functional as F
 
 class Config:
     debug = False
-    image_path = "dataset"
     image_path = "Datasets/Flicker-30k/Images"
     captions_path = "Datasets/Flicker-30k"
     max_length = 32
@@ -26,7 +25,7 @@ class Config:
     batch_size = 32
     epochs = 2
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # other parameters
+    dropout = 0.1
 
 # Classes we'll probably need
 
