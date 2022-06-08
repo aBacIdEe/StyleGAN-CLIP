@@ -232,7 +232,7 @@ def valid_epoch(model, dataloader): # plugs Dataloader through one inference
     return loss_meter
 
 def make_training_df() : # creates training dfs and validation dfs
-    df = pd.read_csv("dataset/labels.csv")
+    df = pd.read_csv("dataset/results.csv")
     max_id = df["id"].max() + 1
     image_ids = np.arrange(0, max_id)
     np.random.seed(420)
@@ -272,3 +272,4 @@ def main():
             best_loss = train_loss
             torch.save(model.state_dict(), "best.pt")
             print("Saved Best Model")
+main()
