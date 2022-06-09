@@ -197,7 +197,7 @@ class Metric():
 
 def make_loader(data, tokenizer): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
-    dataset = CLIPModel(
+    dataset = Dataset(
         data["image_name"].values,
         data["comment"].values,
         tokenizer=tokenizer,
@@ -232,8 +232,8 @@ def valid_epoch(model, dataloader): # plugs Dataloader through one inference
     return loss_meter
 
 def make_training_df() : # creates training dfs and validation dfs
-    df = pd.read_csv(Config.captions_path, sep=r'\s*,\s*', on_bad_lines='skip')
-    #print(str(df))
+    df = pd.read_csv(Config.captions_path, delimiter='|')
+    # print(str(df))
     max_id = len(df.index)
     image_ids = np.arange(0, max_id)
     np.random.seed(420)
