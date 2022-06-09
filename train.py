@@ -14,8 +14,8 @@ from torch import nn
 import torch.nn.functional as F
 
 class Config:
-    image_path = "Datasets/Flicker-30k/Images"
-    captions_path = "Datasets/Flicker-30k"
+    image_path = "Datasets/Flicker-30k/"
+    captions_path = "Datasets/results.csv"
     max_length = 32
     size = 0 # TODO check how big are images
     projection_dim = 256 # projection dimension size
@@ -198,8 +198,8 @@ class Metric():
 def make_loader(data, tokenizer): # inputs Dataset, outputs Dataloader
     transforms = get_transformers()
     dataset = CLIPModel(
-        data["image"].values,
-        data["labels"].values,
+        data["image_name"].values,
+        data["comment"].values,
         tokenizer=tokenizer,
         transforms=transforms,
     )
@@ -232,9 +232,10 @@ def valid_epoch(model, dataloader): # plugs Dataloader through one inference
     return loss_meter
 
 def make_training_df() : # creates training dfs and validation dfs
-    df = pd.read_csv("dataset/labels.csv")
-    max_id = df["id"].max() + 1
-    image_ids = np.arrange(0, max_id)
+    df = pd.read_csv(Config.captions_path, sep=r'\s*,\s*', on_bad_lines='skip')
+    #print(str(df))
+    max_id = len(df.index)
+    image_ids = np.arange(0, max_id)
     np.random.seed(420)
     
     test_ids = np.random.choice(
@@ -242,14 +243,16 @@ def make_training_df() : # creates training dfs and validation dfs
     )
     train_ids = [id_ for id_ in image_ids if id_ not in test_ids] # training ids are everything except the validation ids
     
-    train_df = df[df["id"].isin(train_ids)].reset_index(drop=True)
-    test_df = df[df["id"].isin(test_ids)].reset_index(drop=True)
+    train_df = df.iloc[train_ids].reset_index(drop=True)
+    test_df = df.iloc[test_ids].reset_index(drop=True)
     return train_df, test_df
 
 def main():
     train_df, valid_df = make_training_df() # returns dataframes for the training and validation
-    train_loader = make_loader(train_df) # takes dataframe and returns dataloader
-    valid_loader = make_loader(valid_df) # takes other dataframe and returnd dataloader
+    tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+    print(train_df.keys)
+    train_loader = make_loader(train_df, tokenizer) # takes dataframe and returns dataloader
+    valid_loader = make_loader(valid_df, tokenizer) # takes other dataframe and returnd dataloader
     model = CLIPModel().to(Config.device) # creates a CLIP model
     params = [
         {"params": model.image_encoder.parameters(), "lr": Config.image_encoder_lr},
@@ -272,3 +275,5 @@ def main():
             best_loss = train_loss
             torch.save(model.state_dict(), "best.pt")
             print("Saved Best Model")
+
+main()
