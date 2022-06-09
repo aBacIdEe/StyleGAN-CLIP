@@ -35,7 +35,7 @@ class Dataset(torch.utils.data.Dataset):
 
     def __init__(self, files, captions, tokenizer, transforms):
         self.files = files
-        self.captions = list(captions)
+        self.captions = captions
         self.encoded_captions = tokenizer(
             list(captions), padding=True, truncation=True, max_length=Config.max_length
         )
@@ -250,7 +250,7 @@ def make_training_df() : # creates training dfs and validation dfs
 def main():
     train_df, valid_df = make_training_df() # returns dataframes for the training and validation
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
-    print(train_df.keys)
+    # print(train_df.keys)
     train_loader = make_loader(train_df, tokenizer) # takes dataframe and returns dataloader
     valid_loader = make_loader(valid_df, tokenizer) # takes other dataframe and returnd dataloader
     model = CLIPModel().to(Config.device) # creates a CLIP model
