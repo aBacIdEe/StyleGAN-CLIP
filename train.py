@@ -35,9 +35,9 @@ class Dataset(torch.utils.data.Dataset):
 
     def __init__(self, files, captions, tokenizer, transforms):
         self.files = files
-        self.captions = captions
+        self.captions = list(captions)
         self.encoded_captions = tokenizer(
-            list(captions), padding=True, truncation=True, max_length=Config.max_length
+            self.captions, padding=True, truncation=True, max_length=Config.max_length
         )
         self.transforms = transforms
 
@@ -203,7 +203,7 @@ def make_loader(data, tokenizer): # inputs Dataset, outputs Dataloader
         tokenizer=tokenizer,
         transforms=transforms,
     )
-    dataloader = torch.utils.data.Dataloader(
+    dataloader = torch.utils.data.DataLoader(
         # configure upon parsing dataset
         dataset,
         batch_size=Config.batch_size
@@ -234,7 +234,7 @@ def valid_epoch(model, dataloader): # plugs Dataloader through one inference
 def make_training_df() : # creates training dfs and validation dfs
     df = pd.read_csv(Config.captions_path, delimiter='|')
     # print(str(df))
-    max_id = len(df.index)
+    max_id = 100#len(df.index)
     image_ids = np.arange(0, max_id)
     np.random.seed(420)
     
