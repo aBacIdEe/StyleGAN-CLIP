@@ -7,6 +7,7 @@ import os
 from tqdm.autonotebook import tqdm
 import albumentations as A # provides fast image augmentation and implements image transform
 import torchvision.models as models
+import timm
 from transformers import DistilBertTokenizer, DistilBertModel,DistilBertConfig
 
 import torch
@@ -110,10 +111,10 @@ class CLIPModel(nn.Module):
 
         targets = F.softmax(
             (image_similarity + text_similarity) / 2 , dim=-1)
-        image_loss = self.cross_entropy(logit, targets)
-        text_loss = self.cross_entropy(logit.T, targets.T)
+        image_loss = self.cross_entropy(logit.T, targets.T)
+        text_loss = self.cross_entropy(logit, targets)
         loss = (image_loss + text_loss) / 2
-        return loss
+        return loss.mean()
 
     def cross_entropy(self, x,  targets):
         logSoftmax = nn.LogSoftmax(dim=-1)
@@ -147,7 +148,10 @@ class ImageTokenizer(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.model = models.resnet50(pretrained=True)
+        # self.model = models.resnet50(pretrained=True)
+        self.model = timm.create_model(
+            "resnet50", True, num_classes=0, global_pool="avg"
+        )
         
     # input image
     # output vector
@@ -185,9 +189,9 @@ class Metric():
         self.avg, self.sum, self.count = [0] * 3
     
     def update(self, val, count=1):
-        self.count+=1
+        self.count += 1
         self.sum += val*count
-        self.avg = self.sum/self.count
+        self.avg = self.sum / self.count
 
     def __str__(self):
         return f"{self.avg:.4f}"
@@ -216,7 +220,8 @@ def train_epoch(model, dataloader, optimizer): # plugs Dataloader through one it
         optimizer.zero_grad()
         loss.backward()
         optimizer.step() # updates weights
-        loss_meter.update(loss.item)
+        count = batch["image"].size(0)
+        loss_meter.update(loss.item(), count)
     return loss_meter
 
 def valid_epoch(model, dataloader): # plugs Dataloader through one inference
@@ -225,13 +230,14 @@ def valid_epoch(model, dataloader): # plugs Dataloader through one inference
     for batch in tqdm_object:
         batch = {k: v.to(Config.device) for k, v in batch.items() if k != "caption"}
         loss = model(batch)
-        loss_meter.update(loss.item)
+        count = batch["image"].size(0)
+        loss_meter.update(loss.item(), count)
     return loss_meter
 
 def make_training_df() : # creates training dfs and validation dfs
     df = pd.read_csv(Config.captions_path, delimiter='|')
     # print(str(df))
-    max_id = 15000#len(df.index)
+    max_id = 100#len(df.index)
     image_ids = np.arange(0, max_id)
     np.random.seed(420)
     
@@ -260,6 +266,7 @@ def main():
     ]
     optimizer = torch.optim.AdamW(params, weight_decay=0) # creates the optimizer object
 
+    best_loss = float('inf')
     for epoch in range(Config.epochs): # iterates through as many epochs as needed
         print(f"Epoch: {epoch + 1}")
         model.train()
@@ -268,8 +275,8 @@ def main():
         with torch.no_grad():
             valid_loss = valid_epoch(model, valid_loader) # validates an epoch
         
-        if valid_loss < best_loss: # saves current model if it is better than the last one using valid_loss
-            best_loss = train_loss
+        if valid_loss.avg < best_loss: # saves current model if it is better than the last one using valid_loss
+            best_loss = valid_loss.avg
             torch.save(model.state_dict(), "best.pt")
             print("Saved Best Model")
 
