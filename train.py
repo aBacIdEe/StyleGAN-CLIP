@@ -3,10 +3,8 @@ import cv2
 import numpy as np
 import pandas as pd
 import itertools
-import os
 from tqdm.autonotebook import tqdm
 import albumentations as A # provides fast image augmentation and implements image transform
-import torchvision.models as models
 import timm
 from transformers import DistilBertTokenizer, DistilBertModel,DistilBertConfig
 
@@ -39,6 +37,8 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, files, captions, tokenizer, transforms):
         self.files = files
         self.captions = list(captions)
+
+            
         self.encoded_captions = tokenizer(
             self.captions, padding=True, truncation=True, max_length=Config.max_length
         )
@@ -69,12 +69,6 @@ def get_transformers():
             A.Normalize(max_pixel_value=255.0, always_apply=True)
         ]
     ) 
-
-
-    '''
-    Properties of a Dataset:
-    A list to hold the image-text pairs
-    '''
 
 class CLIPModel(nn.Module):
     
@@ -121,17 +115,6 @@ class CLIPModel(nn.Module):
         loss = (-targets * logSoftmax(x)).sum(1)
         return loss
 
-    '''
-    methods of the model
-    Foward: 
-    Calculate the Cost
-    Update the parameters
-    '''
-    pass
-
-'''
-Somehow setup these tokenizers
-'''
 class WordTokenizer(nn.Module):
     def __init__(self, model_name="distilbert-base-uncased"):
         super().__init__()
@@ -237,7 +220,8 @@ def valid_epoch(model, dataloader): # plugs Dataloader through one inference
 def make_training_df() : # creates training dfs and validation dfs
     df = pd.read_csv(Config.captions_path, delimiter='|')
     # print(str(df))
-    max_id = 100#len(df.index)
+
+    max_id = len(df.index)
     image_ids = np.arange(0, max_id)
     np.random.seed(420)
     
@@ -245,7 +229,10 @@ def make_training_df() : # creates training dfs and validation dfs
         image_ids, size=int(.2*len(image_ids)), replace=False # validation ids are randomly chosen
     )
     train_ids = [id_ for id_ in image_ids if id_ not in test_ids] # training ids are everything except the validation ids
-    
+    # abc = list(df["comment"].values)
+    # for i in train_ids:
+    #     if abc[i] != str(abc[i]):
+    #         abcd = 1
     train_df = df.iloc[train_ids].reset_index(drop=True)
     test_df = df.iloc[test_ids].reset_index(drop=True)
     return train_df, test_df
