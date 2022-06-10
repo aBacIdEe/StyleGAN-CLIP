@@ -7,14 +7,14 @@ import os
 from tqdm.autonotebook import tqdm
 import albumentations as A # provides fast image augmentation and implements image transform
 import torchvision.models as models
-from transformers import DistilBertTokenizer, DistilBertModel
+from transformers import DistilBertTokenizer, DistilBertModel,DistilBertConfig
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 class Config:
-    image_path = "Datasets/Flicker-30k/"
+    image_path = "Datasets/flickr30k_images"
     captions_path = "Datasets/results.csv"
     max_length = 32
     size = 0 # TODO check how big are images
@@ -26,8 +26,10 @@ class Config:
     epochs = 2 # epochs to train for
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dropout = 0.1
-    image_encoder_lr = 0.0001
-    text_encoder_lr = 0.0001
+    image_encoder_lr = 0.00001
+    text_encoder_lr = 0.00001
+    head_lr = 0.0001
+    weight_decay = 0.0001
 
 # Classes we'll probably need
 
@@ -129,21 +131,15 @@ class CLIPModel(nn.Module):
 Somehow setup these tokenizers
 '''
 class WordTokenizer(nn.Module):
-
-    def __init__(self, input):
+    def __init__(self, model_name="distilbert-base-uncased"):
         super().__init__()
+        self.model = DistilBertModel.from_pretrained(model_name)
 
-        tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
-        self.model = DistilBertModel.from_pretrained("distilbert-base-uncased")
 
-        self.inputs = tokenizer(input, return_tensors="pt")
-        
-
-    def forward(self): # what it does on each call
-        # return the token
-        outputs = self.model(**self.inputs)
-        last_hidden_states = outputs.last_hidden_state
-        return last_hidden_states[:,0,:]
+    def forward(self, input_ids, attention_mask):
+        output = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        last_hidden_state = output.last_hidden_state
+        return last_hidden_state[:, 0, :]
         
 
 class ImageTokenizer(nn.Module):
