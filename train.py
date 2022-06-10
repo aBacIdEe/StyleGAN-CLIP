@@ -17,7 +17,7 @@ class Config:
     image_path = "Datasets/flickr30k_images"
     captions_path = "Datasets/results.csv"
     max_length = 32
-    size = 0 # TODO check how big are images
+    size = 256 # TODO check how big are images
     projection_dim = 256 # projection dimension size
     temperature = 1 # confidence
     image_embedding = 2048
@@ -51,6 +51,7 @@ class Dataset(torch.utils.data.Dataset):
 
         image = cv2.imread(f"{Config.image_path}/{self.files[idx]}")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # image = cv2.resize(image, dsize=(Config.size, Config.size), interpolation=cv2.INTER_CUBIC)
         image = self.transforms(image=image)['image']
         item['image'] = torch.tensor(image).permute(2, 0, 1).float()
         item['caption'] = self.captions[idx]
@@ -230,7 +231,7 @@ def valid_epoch(model, dataloader): # plugs Dataloader through one inference
 def make_training_df() : # creates training dfs and validation dfs
     df = pd.read_csv(Config.captions_path, delimiter='|')
     # print(str(df))
-    max_id = 100#len(df.index)
+    max_id = 15000#len(df.index)
     image_ids = np.arange(0, max_id)
     np.random.seed(420)
     
