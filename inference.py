@@ -5,7 +5,11 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 from transformers import DistilBertTokenizer
+
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+NavigationToolbar2Tk)
 
 from train import CLIPModel, make_loader, make_training_df
 
@@ -80,25 +84,13 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
         ax.imshow(image)
         ax.axis("off")
 
-    plt.show()
-
-
-_, valid_df = make_training_df()
-model, image_embeddings = get_image_embeddings(valid_df, "trained.pt")
-
-ws = Tk()
-Frm = Frame(ws)
-Label(Frm, text='Enter Word to Find:').pack(side=LEFT)
-modify = Entry(Frm)
-
-modify.pack(side=LEFT, fill=BOTH, expand=1)
-
-modify.focus_set()
-
-buttn = Button(Frm, text='Find')
-buttn.pack(side=RIGHT)
-Frm.pack(side=TOP)
-
+    canvas = FigureCanvasTkAgg(plt, master=ws)
+    canvas.draw()
+    # placing the canvas on the Tkinter window
+    canvas.get_tk_widget().pack()
+    # creating the Matplotlib toolbar
+    # placing the toolbar on the Tkinter window
+    canvas.get_tk_widget().pack()
 
 def find():
     find_matches(model,
@@ -108,6 +100,20 @@ def find():
                  n=9)
 
 
-buttn.config(command=find)
+if __name__ == '__main__':
+    _, valid_df = make_training_df()
+    model, image_embeddings = get_image_embeddings(valid_df, "trained.pt")
 
-ws.mainloop()
+    ws = Tk()
+    Frm = Frame(ws)
+    Label(Frm, text='Enter Word to Find:').pack(side=LEFT)
+    modify = Entry(Frm)
+    modify.pack(side=LEFT, fill=BOTH, expand=1)
+    modify.focus_set()
+
+    buttn = Button(Frm, text='Find')
+    buttn.pack(side=RIGHT)
+    Frm.pack(side=TOP)
+    buttn.config(command=find)
+
+    ws.mainloop()
