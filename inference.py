@@ -77,7 +77,7 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
     _, indices = torch.topk(dot_similarity.squeeze(0), n * 5)
     matches = [image_filenames[idx] for idx in indices[::5]]
 
-    _, axes = plt.subplots(3, 3, figsize=(10, 10))
+    fig, axes = plt.subplots(3, 3, figsize=(10, 10))
 
     for match, ax in zip(matches, axes.flatten()):
         image = cv2.imread(f"{Config.image_path}/{match}")
@@ -85,7 +85,7 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
         ax.imshow(image)
         ax.axis("off")
 
-    canvas = FigureCanvasTkAgg(axes, master=ws)
+    canvas = FigureCanvasTkAgg(fig, master=ws)
     canvas.draw()
     # placing the canvas on the Tkinter window
     canvas.get_tk_widget().pack()
