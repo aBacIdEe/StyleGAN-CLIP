@@ -81,6 +81,6 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
 
 find_matches(model, 
              image_embeddings,
-             query="maxwell",
+             query="diving through a window",
              image_filenames=valid_df['image_name'].values,
              n=9)
