@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 
 from train import CLIPModel, make_loader, make_training_df
 
+from tkinter import *
+
 
 class Config:
     image_path = "Datasets/flickr30k_images"
@@ -51,10 +53,6 @@ def get_image_embeddings(valid_df, model_path):
     return model, torch.cat(valid_image_embeddings)
 
 
-_, valid_df = make_training_df()
-model, image_embeddings = get_image_embeddings(valid_df, "trained.pt")
-
-
 def find_matches(model, image_embeddings, query, image_filenames, n=9):
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
     encoded_query = tokenizer([query])
@@ -85,9 +83,31 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
     plt.show()
 
 
-while True:
+_, valid_df = make_training_df()
+model, image_embeddings = get_image_embeddings(valid_df, "trained.pt")
+
+ws = Tk()
+Frm = Frame(ws)
+Label(Frm, text='Enter Word to Find:').pack(side=LEFT)
+modify = Entry(Frm)
+
+modify.pack(side=LEFT, fill=BOTH, expand=1)
+
+modify.focus_set()
+
+buttn = Button(Frm, text='Find')
+buttn.pack(side=RIGHT)
+Frm.pack(side=TOP)
+
+
+def find():
     find_matches(model,
                  image_embeddings,
-                 query=input(),
+                 query=modify.get(),
                  image_filenames=valid_df['image_name'].values,
                  n=9)
+
+
+buttn.config(command=find)
+
+ws.mainloop()
