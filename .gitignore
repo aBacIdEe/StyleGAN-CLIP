@@ -1,2 +1,5 @@
 /Datasets
 best.pt
+trained.pt
+test.py
+__pycache__

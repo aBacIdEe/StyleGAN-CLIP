@@ -1,4 +1,3 @@
-from cgitb import text
 import cv2
 import numpy as np
 import pandas as pd
@@ -6,11 +5,13 @@ import itertools
 from tqdm.autonotebook import tqdm
 import albumentations as A # provides fast image augmentation and implements image transform
 import timm
-from transformers import DistilBertTokenizer, DistilBertModel,DistilBertConfig
+from transformers import DistilBertTokenizer, DistilBertModel
 
 import torch
 from torch import nn
 import torch.nn.functional as F
+
+# Classes we'll probably need
 
 class Config:
     image_path = "Datasets/flickr30k_images"
@@ -22,15 +23,13 @@ class Config:
     image_embedding = 2048
     text_embedding = 768
     batch_size = 32
-    epochs = 2 # epochs to train for
+    epochs = 8 # epochs to train for
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dropout = 0.1
     image_encoder_lr = 0.00001
     text_encoder_lr = 0.00001
     head_lr = 0.0001
     weight_decay = 0.0001
-
-# Classes we'll probably need
 
 class Dataset(torch.utils.data.Dataset):
 
@@ -229,7 +228,7 @@ def make_training_df() : # creates training dfs and validation dfs
         image_ids, size=int(.2*len(image_ids)), replace=False # validation ids are randomly chosen
     )
     train_ids = [id_ for id_ in image_ids if id_ not in test_ids] # training ids are everything except the validation ids
-    # abc = list(df["comment"].values)
+    # abc = list(df["comment"].values) # something was wrong with the dataset
     # for i in train_ids:
     #     if abc[i] != str(abc[i]):
     #         abcd = 1
@@ -244,6 +243,7 @@ def main():
     train_loader = make_loader(train_df, tokenizer) # takes dataframe and returns dataloader
     valid_loader = make_loader(valid_df, tokenizer) # takes other dataframe and returnd dataloader
     model = CLIPModel().to(Config.device) # creates a CLIP model
+    # model.cuda()
     params = [
         {"params": model.image_encoder.parameters(), "lr": Config.image_encoder_lr},
         {"params": model.text_encoder.parameters(), "lr": Config.text_encoder_lr},
@@ -267,4 +267,4 @@ def main():
             torch.save(model.state_dict(), "best.pt")
             print("Saved Best Model")
 
-main()
+# main()
