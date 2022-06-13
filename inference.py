@@ -93,7 +93,7 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
 
 
 def clear_canvas():
-    print(ws.winfo_children())
+    # print(ws.winfo_children())
     for widget in ws.winfo_children():
         if ".!canvas" in str(widget):
             widget.destroy()
@@ -101,7 +101,7 @@ def clear_canvas():
 
 def find():
 
-    print(modify.get())
+    # print(modify.get())
 
     find_matches(
         model,
