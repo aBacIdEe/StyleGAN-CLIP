@@ -112,6 +112,9 @@ def clear_canvas():
 
 
 def find():
+
+    print(modify.get())
+
     find_matches(
         model,
         image_embeddings,
