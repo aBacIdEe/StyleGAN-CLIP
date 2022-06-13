@@ -77,6 +77,8 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
     _, indices = torch.topk(dot_similarity.squeeze(0), n * 5)
     matches = [image_filenames[idx] for idx in indices[::5]]
 
+    clear_canvas()
+
     fig, axes = plt.subplots(3, 3, figsize=(10, 10))
 
     for match, ax in zip(matches, axes.flatten()):
@@ -110,8 +112,6 @@ def clear_canvas():
 
 
 def find():
-    clear_canvas()
-
     find_matches(model,
                  image_embeddings,
                  query=modify.get(),
