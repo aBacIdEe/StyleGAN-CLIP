@@ -94,7 +94,24 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
     canvas.get_tk_widget().pack()
 
 
+def clear_canvas():
+    for widget in ws.winfo_children():
+        widget.destroy()
+    Frm = Frame(ws)
+    Label(Frm, text='Enter Word to Find:').pack(side=LEFT)
+    modify = Entry(Frm)
+    modify.pack(side=LEFT, fill=BOTH, expand=1)
+    modify.focus_set()
+
+    buttn = Button(Frm, text='Find')
+    buttn.pack(side=RIGHT)
+    Frm.pack(side=TOP)
+    buttn.config(command=find)
+
+
 def find():
+    clear_canvas()
+
     find_matches(model,
                  image_embeddings,
                  query=modify.get(),
