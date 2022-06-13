@@ -235,7 +235,7 @@ def make_training_df():  # creates training dfs and validation dfs
     np.random.seed(420)
 
     test_ids = np.random.choice(
-        image_ids, size=int(.2 * len(image_ids)), replace=False  # validation ids are randomly chosen
+        image_ids, size=int(1 * len(image_ids)), replace=False  # validation ids are randomly chosen
     )
     train_ids = [id_ for id_ in image_ids if
                  id_ not in test_ids]  # training ids are everything except the validation ids

@@ -112,11 +112,13 @@ def clear_canvas():
 
 
 def find():
-    find_matches(model,
-                 image_embeddings,
-                 query=modify.get(),
-                 image_filenames=valid_df['image_name'].values,
-                 n=9)
+    find_matches(
+        model,
+        image_embeddings,
+        query=modify.get(),
+        image_filenames=valid_df['image_name'].values,
+        n=9
+    )
 
 
 if __name__ == '__main__':
