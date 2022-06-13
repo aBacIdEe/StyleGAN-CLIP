@@ -89,26 +89,14 @@ def find_matches(model, image_embeddings, query, image_filenames, n=9):
 
     canvas = FigureCanvasTkAgg(fig, master=ws)
     canvas.draw()
-    # placing the canvas on the Tkinter window
-    canvas.get_tk_widget().pack()
-    # creating the Matplotlib toolbar
-    # placing the toolbar on the Tkinter window
     canvas.get_tk_widget().pack()
 
 
 def clear_canvas():
+    print(ws.winfo_children())
     for widget in ws.winfo_children():
-        widget.destroy()
-    Frm = Frame(ws)
-    Label(Frm, text='Enter Word to Find:').pack(side=LEFT)
-    modify = Entry(Frm)
-    modify.pack(side=LEFT, fill=BOTH, expand=1)
-    modify.focus_set()
-
-    buttn = Button(Frm, text='Find')
-    buttn.pack(side=RIGHT)
-    Frm.pack(side=TOP)
-    buttn.config(command=find)
+        if ".!canvas" in str(widget):
+            widget.destroy()
 
 
 def find():
