@@ -1,5 +1,1 @@
-Initial Commit
-
-Implementing CLIP first
-
-Implementing GAN second
+CLIP Implementation on custom dataset
